@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="8rYfXgpouyHQacREfgUNzw">
+<head data-page-node-id="RyKyJEY54QAiNwrvz03w8D">
+<meta charset="UTF-8" data-page-node-id="3VhqasBiP2Ojkv3Gln0xEc">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="uABZYW1zX2bcAFqLmMDDMV">
+<title>四方博弈 · 麻将桌（多标的可编辑）</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#101216; color:#E8E6E1; font-family:'PingFang SC','Microsoft YaHei',sans-serif; min-height:100vh; }
+.wrap { max-width:1600px; margin:0 auto; padding:24px 28px 40px; }
+header { text-align:center; margin-bottom:6px; }
+h1 { font-size:22px; font-weight:600; letter-spacing:3px; color:#F1EFE8; }
+.toolbar { display:flex; justify-content:center; align-items:center; gap:8px; flex-wrap:wrap; margin:12px 0 2px; }
+.toolbar button, .toolbar input { background:transparent; border:1px solid rgba(255,255,255,0.25); color:#E8E6E1; border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; }
+.toolbar button:hover { border-color:#FAC775; color:#FAC775; }
+.toolbar button.on { background:rgba(250,199,117,0.16); border-color:#FAC775; color:#FAC775; font-weight:600; }
+.toolbar button.danger:hover { border-color:#E24B4A; color:#E24B4A; }
+.toolbar input { cursor:text; max-width:150px; }
+.stock-line { display:none; justify-content:center; align-items:center; gap:8px; margin:6px 0; flex-wrap:wrap; }
+.stock-line input { background:transparent; border:1px dashed rgba(255,255,255,0.3); color:#9FE1CB; border-radius:8px; padding:5px 10px; font-size:13px; text-align:center; }
+body.editing .stock-line { display:flex; }
+body.editing .toolbar .only-view { display:none; }
+body:not(.editing) .toolbar .only-edit { display:none; }
+.stage-badge { text-align:center; margin:10px 0 4px; font-size:15px; font-weight:600; color:#FAC775; letter-spacing:1px; }
+.main { display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:22px; margin-top:10px; align-items:start; }
+.card { background:#181b21; border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:18px; }
+.chart-wrap svg { display:block; width:100%; max-width:100%; margin:0 auto; }
+.controls { display:flex; align-items:center; gap:12px; margin-top:14px; }
+.controls button { background:transparent; border:1px solid rgba(255,255,255,0.25); color:#E8E6E1; border-radius:8px; padding:6px 16px; cursor:pointer; font-size:13px; white-space:nowrap; }
+.controls button:hover { border-color:#FAC775; color:#FAC775; }
+.controls input[type=range] { flex:1; accent-color:#FAC775; min-width:120px; }
+.tick { font-size:12px; color:#888780; min-width:52px; text-align:right; }
+.timeline { display:flex; gap:6px; margin-bottom:14px; flex-wrap:wrap; }
+.timeline button { flex:1; min-width:42px; background:transparent; border:1px solid rgba(255,255,255,0.15); color:#B4B2A9; border-radius:8px; padding:7px 0; cursor:pointer; font-size:12px; }
+.timeline button.on { background:rgba(250,199,117,0.16); border-color:#FAC775; color:#FAC775; font-weight:600; }
+.panel-title { font-size:12px; color:#888780; letter-spacing:2px; margin:12px 0 8px; }
+.stage-desc { font-size:13px; color:#D3D1C7; line-height:1.8; margin-bottom:4px; }
+.actor { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; background:rgba(255,255,255,0.03); margin-top:8px; }
+.actor .dot { width:10px; height:10px; border-radius:50%; flex:none; }
+.actor b { font-size:13px; font-weight:600; width:44px; flex:none; }
+.actor span { font-size:12px; color:#B4B2A9; line-height:1.6; }
+.note { font-size:11px; color:#5F5E5A; text-align:center; margin-top:18px; letter-spacing:1px; }
+.form label { display:block; font-size:11px; color:#888780; letter-spacing:1px; margin:12px 0 4px; }
+.form input[type=text], .form textarea { width:100%; background:#101216; border:1px solid rgba(255,255,255,0.2); color:#E8E6E1; border-radius:8px; padding:7px 10px; font-size:13px; font-family:inherit; }
+.form textarea { resize:vertical; min-height:56px; line-height:1.6; }
+.form .erow { display:flex; align-items:center; gap:8px; margin-top:8px; }
+.form .erow .dot { width:10px; height:10px; border-radius:50%; flex:none; }
+.form .erow b { font-size:13px; width:44px; flex:none; font-weight:600; }
+.form .erow input { flex:1; background:#101216; border:1px solid rgba(255,255,255,0.2); color:#E8E6E1; border-radius:8px; padding:6px 9px; font-size:12px; }
+.form .hint { font-size:11px; color:#5F5E5A; margin-top:12px; line-height:1.6; }
+#editPane { display:none; }
+body.editing #viewPane { display:none; }
+body.editing #editPane { display:block; }
+.stockbar { margin-top:22px; }
+.stock-chips { display:flex; gap:8px; flex-wrap:wrap; }
+.schip { border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:8px 16px; cursor:pointer; font-size:13px; color:#B4B2A9; background:transparent; }
+.schip:hover { border-color:rgba(250,199,117,0.5); }
+.schip.on { border-color:#FAC775; color:#FAC775; background:rgba(250,199,117,0.12); font-weight:600; }
+.stock-actions { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+.stock-actions button { background:transparent; border:1px solid rgba(255,255,255,0.25); color:#E8E6E1; border-radius:8px; padding:6px 14px; cursor:pointer; font-size:12px; }
+.stock-actions button:hover { border-color:#FAC775; color:#FAC775; }
+.stock-actions button.danger:hover { border-color:#E24B4A; color:#E24B4A; }
+#overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:50; align-items:center; justify-content:center; }
+#overlay.show { display:flex; }
+.modal { background:#181b21; border:1px solid rgba(255,255,255,0.15); border-radius:14px; padding:22px; width:340px; }
+.modal .mt { font-size:15px; font-weight:600; color:#F1EFE8; margin-bottom:12px; }
+.modal input { width:100%; background:#101216; border:1px solid rgba(255,255,255,0.25); color:#E8E6E1; border-radius:8px; padding:9px 12px; font-size:14px; }
+.modal .mrow { display:flex; gap:10px; margin-top:16px; justify-content:flex-end; }
+.modal .mrow button { background:transparent; border:1px solid rgba(255,255,255,0.25); color:#E8E6E1; border-radius:8px; padding:7px 18px; cursor:pointer; font-size:13px; }
+.modal .mrow button.primary { background:rgba(250,199,117,0.16); border-color:#FAC775; color:#FAC775; font-weight:600; }
+@media (max-width:900px) { .main { grid-template-columns:1fr; } }
+</style>
+</head>
+<body data-page-node-id="5Fa8vQC8Yq2J0H14EBpo0X">
+<div class="wrap" data-page-node-id="crkFrRtGbakOrEOQXPG62Z">
+  <header data-page-node-id="K3Fh5cBfVLsRwyIqrkP25j">
+    <h1 data-page-node-id="0pIpWFI2cKWf0CpGMMoCiS">四方博弈 · 麻将桌</h1>
+    <div class="toolbar" data-page-node-id="AL3wcBYAbpb1GP1pOCc1QF">
+      <button id="editBtn" class="only-view" data-page-node-id="KU1PelFrxmgS4MWNl0V6Xv">✎ 编辑内容</button>
+      <button id="doneBtn" class="only-edit on" data-page-node-id="yFYELmB7psGF54uw847vSV">✓ 完成编辑</button>
+      <button id="saveBtn" class="only-edit" data-page-node-id="RuuyRlWmPHaVyMHXasCzj3">存到浏览器</button>
+      <button id="resetBtn" class="only-edit" data-page-node-id="4mrz4x3FZYySB190ijmCMm">重置当前标的</button>
+      <span class="only-edit" style="font-size:11px;color:#5F5E5A;" data-page-node-id="Vs9SCbBySpDAHEzqcYXkan">修改会自动保存草稿</span>
+    </div>
+    <div class="stock-line" data-page-node-id="3Ck4rpTAjqgpGuHenwvQCh">
+      <input id="cMain" type="text" maxlength="10" title="中央方块名称" data-page-node-id="kmgyiSZpOBTboVnUWwgvds">
+      <input id="cSub" type="text" maxlength="24" title="副标题 / 代码" data-page-node-id="XEpb96xCimeMbD1qrct64I">
+    </div>
+  </header>
+  <div class="stage-badge" id="stageBadge" data-page-node-id="5WTZIhD8mgRGXhXcrsPGt4">开局 · 2025Q4</div>
+  <div class="main" data-page-node-id="x3BowfPSSeVUbXCumNKCOg">
+    <div class="card chart-wrap" data-page-node-id="hzw3zvF62htKMIjH8PR3gf">
+      <svg viewBox="0 0 680 680" width="100%" role="img" aria-label="四方博弈时间外扩图" data-page-node-id="wAUliOhKqxIFvD5Jow3Uff">
+        <title>四方博弈图</title>
+        <desc data-page-node-id="gr1tVWBIidY7gdBeEu4Y4O">政策、我、散户、主力固定坐在开局座位并指向筹码池，同心方框随时间向外扩展，每层框内侧显示该阶段局况</desc>
+        <defs data-page-node-id="bTVq7hKfAvzQiubtmITWF3">
+          <marker id="arrowRed" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse" data-page-node-id="oiqIxsthHy09j5532TCIK2">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#E24B4A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="fispSd6tPeLYgiQO2bBud3"/>
+          </marker>
+        </defs>
+        <g id="rings" data-page-node-id="cH8Pzjrmxo20E26haA8Owm"></g>
+        <g id="arrows" data-page-node-id="gLMEBl1wXtVKCqClnBU1Iu">
+          <line x1="340" y1="259" x2="340" y2="272" stroke="#E24B4A" stroke-width="2" marker-end="url(#arrowRed)" data-page-node-id="hVnV8F6fsPemHaSBCcBF70"/>
+          <line x1="340" y1="424" x2="340" y2="408" stroke="#E24B4A" stroke-width="2" marker-end="url(#arrowRed)" data-page-node-id="y66T1B2DPADkjjFgRZNkxN"/>
+          <line x1="264" y1="340" x2="276" y2="340" stroke="#E24B4A" stroke-width="2" marker-end="url(#arrowRed)" data-page-node-id="msbqfV4JEd50Z5FvZoj8qK"/>
+          <line x1="416" y1="340" x2="404" y2="340" stroke="#E24B4A" stroke-width="2" marker-end="url(#arrowRed)" data-page-node-id="xGSMjurPF9isvqpDPrSmVN"/>
+        </g>
+        <rect x="280" y="280" width="120" height="120" rx="6" fill="#85B7EB" data-page-node-id="hn8dee2YkFzlQYGxcCIHKF"/>
+        <text id="centerMain" x="340" y="330" text-anchor="middle" dominant-baseline="central" font-size="15" font-weight="600" fill="#042C53" data-page-node-id="Uw3SYhA2kFWKaGiwvHLeil">筹码池</text>
+        <text id="centerSub" x="340" y="352" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#0C447C" data-page-node-id="MAwrwA34GVbLZbYVa3BB4x">水发燃气 603318</text>
+        <g font-size="11" font-weight="600" fill="#0C447C" opacity="0.8" text-anchor="middle" dominant-baseline="central" data-page-node-id="v7QnT6V8GVdaKqTQVR2hP9">
+          <text x="340" y="291" data-page-node-id="AmP8nmEzdLCKNtQoSSFmE1">西</text>
+          <text x="371" y="340" data-page-node-id="daYFeOJZny8LAuA8gDK7b2">南</text>
+          <text x="340" y="392" data-page-node-id="Gy1qenFYmTbyX8cAnItOTQ">东</text>
+          <text x="309" y="340" data-page-node-id="uVdaOguIeu3RiKwXxqbS7J">北</text>
+        </g>
+        <g data-page-node-id="n8xJ6YaC8yz3FkulHAxxJq">
+          <rect x="290" y="226" width="100" height="28" rx="14" fill="#3C3489" stroke="#AFA9EC" stroke-width="0.5" data-page-node-id="ZzV0mLC0Twqd7WUNo6zaRG"/>
+          <text x="340" y="240" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="600" fill="#CECBF6" data-page-node-id="GJ57n7zYz1XbdW49aeIxUM">政 策</text>
+        </g>
+        <g data-page-node-id="Arh8WvVqQQWnLy9FNEU7iO">
+          <rect x="290" y="426" width="100" height="28" rx="14" fill="#085041" stroke="#5DCAA5" stroke-width="0.5" data-page-node-id="6BLkcaFZu21AA80KQlsk6h"/>
+          <text x="340" y="440" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="600" fill="#9FE1CB" data-page-node-id="WBJddvBHcMUlPhxJGDbzkP">我（Jack）</text>
+        </g>
+        <g data-page-node-id="FGMBmaLaTGZlFByyt8pvtr">
+          <rect x="226" y="326" width="76" height="28" rx="14" fill="#633806" stroke="#FAC775" stroke-width="0.5" data-page-node-id="d3tHZmlAPQbLDbm2ofkhiO"/>
+          <text x="264" y="340" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="600" fill="#FAC775" data-page-node-id="2lxGoAtDSgtBcojADrQVeA">散 户</text>
+        </g>
+        <g data-page-node-id="GczAFn8Kzk2x97zMFYH3NR">
+          <rect x="378" y="326" width="76" height="28" rx="14" fill="#712B13" stroke="#F0997B" stroke-width="0.5" data-page-node-id="sF1xZAKKbz31E2FRcsdVII"/>
+          <text x="416" y="340" text-anchor="middle" dominant-baseline="central" font-size="12" font-weight="600" fill="#F0997B" data-page-node-id="QHMI75H37l605otLzCkvu9">主 力</text>
+        </g>
+        <g id="acts" data-page-node-id="itVmCw1eAfM2JgDiFqI0pn"></g>
+      </svg>
+      <div class="controls" data-page-node-id="CfHRvHf3iKEIKCY36QECOp">
+        <button id="playBtn" data-page-node-id="hpyY2dB8HDCmEHgoWYVlYO">重播</button>
+        <input type="range" id="timeSlider" min="1" max="6" value="6" data-page-node-id="vsMLI6fFXHF7fWmnFk6pts">
+        <span class="tick" id="timeLabel" data-page-node-id="nJFifEgKGuOx1NzUZ4RRJG">T6 / 6</span>
+      </div>
+    </div>
+    <div class="card" data-page-node-id="LvWnYKsX9YSbFwFbThRmLA">
+      <div class="timeline" id="timeline" data-page-node-id="xSMlMLEc7HlJIjPBMs5RCp"></div>
+      <div id="viewPane" data-page-node-id="Lv08favsDCK1RWokBKlFxP">
+        <div class="panel-title" data-page-node-id="VNu8afxqqNTkW2IyjUmhW4">当前局况</div>
+        <div class="stage-desc" id="stageDesc" data-page-node-id="KlEHPMq24IIjFu1uAwjfjJ"></div>
+        <div id="actors" data-page-node-id="vAjylcWHh11AW40BAgTuim"></div>
+        <div class="panel-title" style="margin-top:16px;" data-page-node-id="GwWSXC6Z6nNFlbBj9XBjwn">四方布局</div>
+        <div class="stage-desc" style="font-size:12px;color:#888780;" data-page-node-id="CnLpJOBoTDZLX4SX5KzDa2">紫=政策 &nbsp;青=我 &nbsp;黄=散户 &nbsp;红=主力 &nbsp;→ 共同指向中央</div>
+      </div>
+      <div id="editPane" class="form" data-page-node-id="AA9ZME74nrXiqwnMzDBXA2">
+        <div class="panel-title" data-page-node-id="CEPGYRXhWCOWcTBjHqdU8M">编辑当前层（第 <span id="eIdx" data-page-node-id="6DpKycQ84BjhsILleytg2T">1</span> 层）</div>
+        <label for="fName" data-page-node-id="8YqGWME8KDAUO1HT9EnEuI">阶段名（SVG 每圈左上角标签）</label>
+        <input type="text" id="fName" maxlength="24" data-page-node-id="bPgeFaMB3bLrN3cXXFjFWl">
+        <label for="fShort" data-page-node-id="qjXtCFHcivSd9VA9YbDboh">框内摘要（方框内侧显示的当前局况）</label>
+        <input type="text" id="fShort" maxlength="14" data-page-node-id="N7FflHk9d1GafIcsFxtTtJ">
+        <label for="fDesc" data-page-node-id="dBcT5GnPHACIshaPGf8nSx">局况描述（右侧面板详细说明）</label>
+        <textarea id="fDesc"></textarea>
+        <label style="margin-top:14px;" data-page-node-id="pv0LwCeNyQtywZhyJwGRWq">四方各自的动作</label>
+        <div id="eActors" data-page-node-id="wkVI15NDEQFCcZf6bpDjNN"></div>
+        <p class="hint" data-page-node-id="qEHEJbakpYmIqGwKrlueHH">提示：点上方 T1-T6 切换要编辑的层；点击「存到浏览器」长期保存，刷新页面不丢失。</p>
+      </div>
+    </div>
+  </div>
+  <div class="card stockbar" data-page-node-id="HJcNOFVPxz9WE9DQ4W568l">
+    <div class="panel-title" data-page-node-id="fp5LfjQJRPqaGeHUDITRQH">标的池（点击切换 · 每只股票独立一套剧本）</div>
+    <div class="stock-chips" id="stockChips" data-page-node-id="9PBHamJYUKmII2CFFbDIJ6"></div>
+    <div class="stock-actions" data-page-node-id="CqpOFhdst0CGQ05k7iVQrV">
+      <button id="addStock" data-page-node-id="4VZB5vvsFMJE7rCpmJMSBm">＋ 新增标的（复制当前剧本）</button>
+      <button id="delStock" class="danger only-edit" data-page-node-id="y2l4s4FahNR2oMVswgCn38">删除当前标的</button>
+    </div>
+  </div>
+  <p class="note" data-page-node-id="V7CO3ZClDAu752gePDLYZP">四方博弈 · 示意剧本 · 多标的可编辑版 —— 修改内容自动保存在本机浏览器</p>
+</div>
+<div id="overlay" data-page-node-id="HGix28seUifNYW9zK1oW9s">
+  <div class="modal" data-page-node-id="QJVGbuEFxFhLD4D4cmk2sf">
+    <div class="mt" id="mTitle" data-page-node-id="luShSD2F8S29XtCqUxDfOf">新增标的</div>
+    <input id="mInput" type="text" maxlength="20" placeholder="输入标的名称（如：上海贝岭）" data-page-node-id="nOixcaiE5GHEqHqtjgXKzc">
+    <div class="mrow" data-page-node-id="5zkomsIxeFayFirUuAeCCj"><button id="mCancel" data-page-node-id="Bb9Hjy0lDcA2ri5lFPpUkE">取消</button><button id="mOk" class="primary" data-page-node-id="SbMFMOXQ7cMlyGzAmey5MP">确定</button></div>
+  </div>
+</div>
+<script>
+(function(){
+  var NS='http://www.w3.org/2000/svg';
+  var KEY='sqby_data_v3';
+  var OLDKEY='sqby_data_v2';
+  var COLORS={zhengce:'#CECBF6',wo:'#9FE1CB',sanhu:'#FAC775',zhuli:'#F0997B'};
+  var AN={zhengce:'政策',zhuli:'主力',sanhu:'散户',wo:'我'};
+  var ORDER=['zhengce','zhuli','sanhu','wo'];
+  var DEF_STAGES=[
+    {t:'T1',name:'开局',short:'待填写 · 第1层',desc:'（在此填写该阶段的局况描述）',
+      actors:[
+        {k:'zhengce',act:'（政策动作）'},
+        {k:'zhuli',act:'（主力动作）'},
+        {k:'sanhu',act:'（散户动作）'},
+        {k:'wo',act:'（我的动作）'}]},
+    {t:'T2',name:'埋伏',short:'待填写 · 第2层',desc:'（在此填写该阶段的局况描述）',
+      actors:[
+        {k:'zhengce',act:'（政策动作）'},
+        {k:'zhuli',act:'（主力动作）'},
+        {k:'sanhu',act:'（散户动作）'},
+        {k:'wo',act:'（我的动作）'}]},
+    {t:'T3',name:'发酵',short:'待填写 · 第3层',desc:'（在此填写该阶段的局况描述）',
+      actors:[
+        {k:'zhengce',act:'（政策动作）'},
+        {k:'zhuli',act:'（主力动作）'},
+        {k:'sanhu',act:'（散户动作）'},
+        {k:'wo',act:'（我的动作）'}]},
+    {t:'T4',name:'拉升',short:'待填写 · 第4层',desc:'（在此填写该阶段的局况描述）',
+      actors:[
+        {k:'zhengce',act:'（政策动作）'},
+        {k:'zhuli',act:'（主力动作）'},
+        {k:'sanhu',act:'（散户动作）'},
+        {k:'wo',act:'（我的动作）'}]},
+    {t:'T5',name:'涌入',short:'待填写 · 第5层',desc:'（在此填写该阶段的局况描述）',
+      actors:[
+        {k:'zhengce',act:'（政策动作）'},
+        {k:'zhuli',act:'（主力动作）'},
+        {k:'sanhu',act:'（散户动作）'},
+        {k:'wo',act:'（我的动作）'}]},
+    {t:'T6',name:'结算',short:'待填写 · 第6层',desc:'（在此填写该阶段的局况描述）',
+      actors:[
+        {k:'zhengce',act:'（政策动作）'},
+        {k:'zhuli',act:'（主力动作）'},
+        {k:'sanhu',act:'（主力动作）'},
+        {k:'wo',act:'（我的动作）'}]}
+  ];
+  var DEF={stocks:[{id:'s1',name:'水发燃气',main:'筹码池',sub:'水发燃气 603318',stages:[
+    {t:'T1',name:'开局 · 2025Q4',short:'国资锁仓 · 筹码集中',desc:'国资锁仓、筹码高度集中（股东户数仅 2.65 万）——牌桌上其实只有「庄家们」，散户还没上桌。',
+      actors:[
+        {k:'zhengce',act:'国资整合格局，坐庄不动'},
+        {k:'zhuli',act:'壳资源梳理后低位布局'},
+        {k:'sanhu',act:'无人问津，筹码全在大户手'},
+        {k:'wo',act:'尚未入场'}]},
+    {t:'T2',name:'埋伏 · 2026Q1',short:'主力低吸 · 定增落地',desc:'主力低价吸筹，5.23 元定增落地输血——聪明钱先坐下，方桌开始有人气。',
+      actors:[
+        {k:'zhengce',act:'放行 5.23 元定增，注入资本'},
+        {k:'zhuli',act:'定增低价拿筹 + 二级暗吸'},
+        {k:'sanhu',act:'仍在场外看戏'},
+        {k:'wo',act:'开始研究燃气逻辑'}]},
+    {t:'T3',name:'发酵 · 2026H1',short:'题材发酵 · 散户进场',desc:'氦气 + LNG + 掺氢题材酝酿，散户开始围观进场——方桌向外扩第一圈。',
+      actors:[
+        {k:'zhengce',act:'氦气 / 掺氢概念暖风频吹'},
+        {k:'zhuli',act:'缩量洗盘，成本压到 8.5-9 元'},
+        {k:'sanhu',act:'围观，小仓试水'},
+        {k:'wo',act:'观望，等业绩验证'}]},
+    {t:'T4',name:'拉升 · 2026年8月',short:'主力点火 · 获利盘99%',desc:'主力点火：8/21、8/25 两个涨停，获利盘一度冲到 99.75%——情绪最热的一圈。',
+      actors:[
+        {k:'zhengce',act:'公司互动问答持续释放题材'},
+        {k:'zhuli',act:'点火拉升，做给市场看'},
+        {k:'sanhu',act:'涨停板追入，情绪点燃'},
+        {k:'wo',act:'主升踏空，按纪律不追'}]},
+    {t:'T5',name:'涌入 · 8月下旬',short:'散户涌入 · 户数翻倍',desc:'散户追高接力，股东户数翻倍至 5.69 万、人均持股腰斩——牌桌挤满人，外圈越扩越大。',
+      actors:[
+        {k:'zhengce',act:'国资整合预期升温（集团增资挂牌）'},
+        {k:'zhuli',act:'高位换手，边拉边派'},
+        {k:'sanhu',act:'户数翻倍，人均持股被腰斩'},
+        {k:'wo',act:'拒绝追高，空仓等分歧'}]},
+    {t:'T6',name:'结算 · 2026年9月',short:'高位换手 · 九成套牢',desc:'高位换手后获利盘只剩 9%、约九成筹码套牢——外圈接棒的人，成了买单的人。',
+      actors:[
+        {k:'zhengce',act:'无新动作，规则不变'},
+        {k:'zhuli',act:'持续派发，边拉边出，未完全清仓'},
+        {k:'sanhu',act:'约九成套牢，户均市值缩水'},
+        {k:'wo',act:'等待筹码重新集中再评估'}]}
+  ]}],curId:'s1'};
+  var DATA=null;
+  try{ var raw=localStorage.getItem(KEY); if(raw){ DATA=JSON.parse(raw); } }catch(e){}
+  if(!DATA||!DATA.stocks||!DATA.stocks.length){
+    var old=null;
+    try{ var oraw=localStorage.getItem(OLDKEY); if(oraw){ old=JSON.parse(oraw); } }catch(e){}
+    if(old&&old.stages){
+      DATA={stocks:[{id:'s1',name:'我的标的',main:old.main||'筹码池',sub:old.sub||'',stages:old.stages}],curId:'s1'};
+    }else{
+      DATA=JSON.parse(JSON.stringify(DEF));
+    }
+  }
+  if(!DATA.curId||!DATA.stocks.some(function(s){ return s.id===DATA.curId; })){ DATA.curId=DATA.stocks[0].id; }
+  function cur(){ return DATA.stocks.find(function(s){ return s.id===DATA.curId; }); }
+  var svgRings=document.getElementById('rings');
+  var ringTexts=[];
+  var shortTexts=[];
+  DEF.stocks[0].stages.forEach(function(s,i){
+    var size=200+i*88, off=(680-size)/2;
+    var grp=document.createElementNS(NS,'g');
+    var r=document.createElementNS(NS,'rect');
+    r.setAttribute('x',off); r.setAttribute('y',off);
+    r.setAttribute('width',size); r.setAttribute('height',size);
+    r.setAttribute('rx','10');
+    r.setAttribute('fill','none');
+    r.setAttribute('stroke','#AFA9EC');
+    r.setAttribute('stroke-width','1');
+    grp.appendChild(r);
+    var tx=document.createElementNS(NS,'text');
+    tx.setAttribute('x',off+10); tx.setAttribute('y',off-1);
+    tx.setAttribute('font-size','11'); tx.setAttribute('fill','#AFA9EC');
+    grp.appendChild(tx);
+    ringTexts.push(tx);
+    var sx=document.createElementNS(NS,'text');
+    sx.setAttribute('x',off+12); sx.setAttribute('y',off+18);
+    sx.setAttribute('font-size','11'); sx.setAttribute('fill','#888780');
+    grp.appendChild(sx);
+    shortTexts.push(sx);
+    svgRings.appendChild(grp);
+  });
+  var actsG=document.getElementById('acts');
+  var ACT_POS={zhengce:{x:340,y:206,anchor:'middle'},sanhu:{x:44,y:340,anchor:'middle',vertical:true},zhuli:{x:636,y:340,anchor:'middle',vertical:true},wo:{x:340,y:474,anchor:'middle'}};
+  var actEls={};
+  ORDER.forEach(function(k){
+    var p=ACT_POS[k], v=!!p.vertical;
+    var grp=document.createElementNS(NS,'g');
+    var bg=document.createElementNS(NS,'rect');
+    bg.setAttribute('rx','6');
+    bg.setAttribute('fill','#101216');
+    if(v){ bg.setAttribute('width','22'); } else { bg.setAttribute('height','22'); bg.setAttribute('y',p.y-12); }
+    var tx=document.createElementNS(NS,'text');
+    tx.setAttribute('font-size','11');
+    tx.setAttribute('fill',COLORS[k]);
+    tx.setAttribute('text-anchor',p.anchor);
+    tx.setAttribute('x',p.x);
+    tx.setAttribute('y',p.y);
+    tx.setAttribute('dominant-baseline','central');
+    grp.appendChild(bg);
+    grp.appendChild(tx);
+    actsG.appendChild(grp);
+    actEls[k]={bg:bg,tx:tx,p:p,v:v};
+  });
+  var timeline=document.getElementById('timeline');
+  for(var i=0;i<6;i++){
+    (function(idx){
+      var b=document.createElement('button');
+      b.type='button'; b.textContent='T'+(idx+1);
+      b.addEventListener('click',function(){ stop(); stageN=idx+1; render(); fillForm(); });
+      timeline.appendChild(b);
+    })(i);
+  }
+  var slider=document.getElementById('timeSlider');
+  var label=document.getElementById('timeLabel');
+  var badge=document.getElementById('stageBadge');
+  var desc=document.getElementById('stageDesc');
+  var actors=document.getElementById('actors');
+  var btn=document.getElementById('playBtn');
+  var cMain=document.getElementById('cMain');
+  var cSub=document.getElementById('cSub');
+  var editBtn=document.getElementById('editBtn');
+  var doneBtn=document.getElementById('doneBtn');
+  var saveBtn=document.getElementById('saveBtn');
+  var resetBtn=document.getElementById('resetBtn');
+  var chips=document.getElementById('stockChips');
+  var addStock=document.getElementById('addStock');
+  var delStock=document.getElementById('delStock');
+  var fName=document.getElementById('fName');
+  var fShort=document.getElementById('fShort');
+  var fDesc=document.getElementById('fDesc');
+  var eActors=document.getElementById('eActors');
+  var eIdx=document.getElementById('eIdx');
+  var timer=null;
+  var stageN=6;
+  function actorsHtml(st){
+    var h='';
+    ORDER.forEach(function(k){
+      var a=null;
+      st.actors.forEach(function(x){ if(x.k===k){ a=x; } });
+      if(!a){ return; }
+      h+='<div class="actor"><span class="dot" style="background:'+COLORS[k]+'"></span><b style="color:'+COLORS[k]+'">'+AN[k]+'</b><span>'+a.act+'</span></div>';
+    });
+    return h;
+  }
+  function renderStockChips(){
+    var h='';
+    DATA.stocks.forEach(function(s){
+      h+='<button type="button" class="schip'+(s.id===DATA.curId?' on':'')+'" data-id="'+s.id+'">'+s.name+'</button>';
+    });
+    chips.innerHTML=h;
+    chips.querySelectorAll('.schip').forEach(function(b){
+      b.addEventListener('click',function(){
+        if(DATA.curId===b.getAttribute('data-id')){ return; }
+        autosave();
+        DATA.curId=b.getAttribute('data-id');
+        stageN=6;
+        autosave();
+        renderAll();
+      });
+    });
+  }
+  function render(){
+    var st=cur();
+    var groups=svgRings.querySelectorAll('g');
+    groups.forEach(function(grp,i){
+      grp.style.opacity=(i<stageN)?'1':'0';
+      var rect=grp.querySelector('rect');
+      var isCur=(i===stageN-1);
+      rect.setAttribute('stroke',isCur?'#FAC775':'#AFA9EC');
+      rect.setAttribute('stroke-width',isCur?'1.5':'1');
+      ringTexts[i].textContent=st.stages[i].t+' '+st.stages[i].name;
+      ringTexts[i].setAttribute('fill',isCur?'#FAC775':'#AFA9EC');
+      shortTexts[i].textContent=st.stages[i].short;
+      shortTexts[i].setAttribute('fill',isCur?'#FAC775':'#888780');
+    });
+    var s=st.stages[stageN-1];
+    ORDER.forEach(function(k){
+      var a=null;
+      s.actors.forEach(function(x){ if(x.k===k){ a=x; } });
+      var el=actEls[k];
+      if(!a||!a.act){ el.bg.setAttribute('opacity','0'); el.tx.setAttribute('opacity','0'); return; }
+      var t=a.act, p=el.p;
+      el.bg.setAttribute('opacity','1');
+      el.tx.setAttribute('opacity','1');
+      if(el.v){
+        while(el.tx.firstChild){ el.tx.removeChild(el.tx.firstChild); }
+        var rg=200+(stageN-1)*88, roff=(680-rg)/2;
+        var px=(k==='sanhu')?(roff+13):(680-roff-13);
+        if(k==='sanhu'&&px<273&&px>183){ px=273; }
+        if(k==='zhuli'&&px>407&&px<497){ px=407; }
+        var lh=14, maxN=Math.max(1,Math.floor((rg-36)/lh));
+        var txt=(t.length>maxN)?t.slice(0,maxN):t;
+        var ch=txt.split(''), n=ch.length, sy=p.y-(n-1)*lh/2;
+        for(var ci=0;ci<n;ci++){
+          var ts=document.createElementNS(NS,'tspan');
+          ts.setAttribute('x',px);
+          ts.setAttribute('y',sy+ci*lh);
+          ts.textContent=ch[ci];
+          el.tx.appendChild(ts);
+        }
+        var hh=n*lh+14;
+        el.bg.setAttribute('x',px-11);
+        el.bg.setAttribute('y',p.y-hh/2);
+        el.bg.setAttribute('width','22');
+        el.bg.setAttribute('height',hh);
+      }else{
+        var hg=200+(stageN-1)*88, hoff=(680-hg)/2;
+        var py=(k==='zhengce')?(hoff+34):(680-hoff-14);
+        var maxN=Math.max(1,Math.floor((hg-60)/11));
+        var txt=(t.length>maxN)?t.slice(0,maxN):t;
+        el.tx.textContent=txt;
+        el.tx.setAttribute('y',py);
+        var w=(txt.length*11)+16;
+        el.bg.setAttribute('x',p.x-w/2);
+        el.bg.setAttribute('y',py-11);
+        el.bg.setAttribute('width',w);
+        el.bg.setAttribute('height','22');
+      }
+    });
+    label.textContent='T'+stageN+' / 6';
+    slider.value=String(stageN);
+    badge.textContent=s.name;
+    desc.textContent=s.desc;
+    actors.innerHTML=actorsHtml(s);
+    var btns=timeline.querySelectorAll('button');
+    btns.forEach(function(b,i){ b.className=(i===stageN-1)?'on':''; });
+    document.getElementById('centerMain').textContent=st.main;
+    document.getElementById('centerSub').textContent=st.sub;
+    cMain.value=st.main;
+    cSub.value=st.sub;
+    renderStockChips();
+  }
+  function renderAll(){ render(); fillForm(); }
+  function buildEActors(){
+    var s=cur().stages[stageN-1];
+    var h='';
+    ORDER.forEach(function(k){
+      var a=null;
+      s.actors.forEach(function(x){ if(x.k===k){ a=x; } });
+      if(!a){ return; }
+      h+='<div class="erow"><span class="dot" style="background:'+COLORS[k]+'"></span><b style="color:'+COLORS[k]+'">'+AN[k]+'</b><input type="text" data-k="'+k+'" value="'+a.act.replace(/"/g,'&quot;')+'"></div>';
+    });
+    eActors.innerHTML=h;
+  }
+  function fillForm(){
+    var s=cur().stages[stageN-1];
+    eIdx.textContent=String(stageN);
+    fName.value=s.name;
+    fShort.value=s.short;
+    fDesc.value=s.desc;
+    buildEActors();
+  }
+  function commit(){
+    var s=cur().stages[stageN-1];
+    s.name=fName.value.trim()||s.name;
+    s.short=fShort.value.trim()||s.short;
+    s.desc=fDesc.value.trim();
+    eActors.querySelectorAll('input').forEach(function(inp){
+      var k=inp.getAttribute('data-k');
+      s.actors.forEach(function(a){ if(a.k===k){ a.act=inp.value.trim(); } });
+    });
+    render();
+    autosave();
+  }
+  function autosave(){ try{ localStorage.setItem(KEY,JSON.stringify(DATA)); }catch(e){} }
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } btn.textContent='重播'; }
+  function play(){
+    stop(); btn.textContent='暂停';
+    stageN=0;
+    timer=setInterval(function(){
+      stageN++;
+      if(stageN>6){ stop(); return; }
+      render();
+      fillForm();
+    },1300);
+  }
+  fName.addEventListener('input',commit);
+  fShort.addEventListener('input',commit);
+  fDesc.addEventListener('input',commit);
+  eActors.addEventListener('input',commit);
+  slider.addEventListener('input',function(){ stop(); stageN=parseInt(slider.value,10); render(); fillForm(); });
+  btn.addEventListener('click',function(){ if(timer){ stop(); } else { play(); } });
+  cMain.addEventListener('input',function(){ cur().main=cMain.value.trim()||'筹码池'; document.getElementById('centerMain').textContent=cur().main; renderStockChips(); autosave(); });
+  cSub.addEventListener('input',function(){ cur().sub=cSub.value.trim(); document.getElementById('centerSub').textContent=cur().sub; autosave(); });
+  editBtn.addEventListener('click',function(){ document.body.classList.add('editing'); fillForm(); });
+  doneBtn.addEventListener('click',function(){ commit(); document.body.classList.remove('editing'); });
+  saveBtn.addEventListener('click',function(){ commit(); autosave(); var t=saveBtn.textContent; saveBtn.textContent='✓ 已保存'; setTimeout(function(){ saveBtn.textContent=t; },1200); });
+  var mOverlay=document.getElementById('overlay');
+  var mTitle=document.getElementById('mTitle');
+  var mInput=document.getElementById('mInput');
+  var mOk=document.getElementById('mOk');
+  var mCancel=document.getElementById('mCancel');
+  var mCb=null;
+  function openModal(title,cb){ mTitle.textContent=title; mCb=cb; mInput.value=''; mInput.placeholder='输入标的名称（如：上海贝岭）'; mOk.style.display=''; mCancel.textContent='取消'; mOverlay.classList.add('show'); setTimeout(function(){ mInput.focus(); },60); }
+  function closeModal(){ mOverlay.classList.remove('show'); mCb=null; }
+  mOk.addEventListener('click',function(){ var v=mInput.value.trim(); if(!v){ mInput.focus(); return; } var cb=mCb; closeModal(); if(cb){ cb(v); } });
+  mCancel.addEventListener('click',closeModal);
+  mInput.addEventListener('keydown',function(e){ if(e.key==='Enter'){ mOk.click(); } if(e.key==='Escape'){ closeModal(); } });
+  function armConfirm(btn,armedText,fn){
+    if(btn.dataset.armed==='1'){
+      btn.dataset.armed='';
+      btn.textContent=btn.dataset.orig;
+      fn();
+      return;
+    }
+    btn.dataset.armed='1';
+    btn.dataset.orig=btn.textContent;
+    btn.textContent=armedText;
+    setTimeout(function(){
+      if(btn.dataset.armed==='1'){ btn.dataset.armed=''; btn.textContent=btn.dataset.orig; }
+    },3000);
+  }
+  resetBtn.addEventListener('click',function(){
+    armConfirm(resetBtn,'再点一次确认重置',function(){
+      var st=cur();
+      st.stages=JSON.parse(JSON.stringify(DEF_STAGES));
+      renderAll();
+      autosave();
+    });
+  });
+  addStock.addEventListener('click',function(){
+    openModal('新增标的（复制当前剧本）',function(name){
+      var ns={id:'s'+Date.now(),name:name,main:'筹码池',sub:name,stages:JSON.parse(JSON.stringify(cur().stages))};
+      DATA.stocks.push(ns);
+      DATA.curId=ns.id;
+      stageN=6;
+      autosave();
+      renderAll();
+    });
+  });
+  delStock.addEventListener('click',function(){
+    if(DATA.stocks.length<=1){ mTitle.textContent='提示'; mCb=null; mInput.value=''; mInput.placeholder='至少保留一个标的，无法删除'; mOverlay.classList.add('show'); mOk.style.display='none'; mCancel.textContent='知道了'; return; }
+    armConfirm(delStock,'再点一次确认删除',function(){
+      var st=cur();
+      DATA.stocks=DATA.stocks.filter(function(s){ return s.id!==st.id; });
+      DATA.curId=DATA.stocks[0].id;
+      stageN=6;
+      autosave();
+      renderAll();
+    });
+  });
+  renderAll();
+})();
+</script>
+</body>
+</html>
