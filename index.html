@@ -16,6 +16,21 @@ h1 { font-size:22px; font-weight:600; letter-spacing:3px; color:#F1EFE8; }
 .toolbar button.on { background:rgba(250,199,117,0.16); border-color:#FAC775; color:#FAC775; font-weight:600; }
 .toolbar button.danger:hover { border-color:#E24B4A; color:#E24B4A; }
 .toolbar input { cursor:text; max-width:150px; }
+.sync-mask { position:fixed; inset:0; background:rgba(0,0,0,0.62); display:none; align-items:center; justify-content:center; z-index:80; }
+.sync-mask.show { display:flex; }
+.syncbox { width:min(430px,92vw); background:#16181D; border:1px solid rgba(255,255,255,0.18); border-radius:12px; padding:18px 18px 16px; box-shadow:0 18px 50px rgba(0,0,0,0.5); }
+.syncbox h3 { margin:0 0 6px; font-size:14px; color:#F1EFE8; font-weight:600; }
+.syncbox p.tip { margin:0 0 12px; font-size:11px; color:#888780; line-height:1.7; }
+.syncbox label { display:block; font-size:11px; color:#AFA9EC; margin:12px 0 5px; }
+.syncbox label a { float:right; color:#85B7EB; text-decoration:none; }
+.syncbox input { width:100%; box-sizing:border-box; background:#0E1013; border:1px solid rgba(255,255,255,0.2); color:#E8E6E1; border-radius:8px; padding:8px 10px; font-size:12px; outline:none; }
+.syncbox input:focus { border-color:#9FE1CB; }
+.syncbox .btns { display:flex; gap:8px; margin-top:14px; }
+.syncbox .btns button { flex:1; background:transparent; border:1px solid rgba(255,255,255,0.25); color:#E8E6E1; border-radius:8px; padding:8px 6px; font-size:12px; cursor:pointer; }
+.syncbox .btns button:hover { border-color:#FAC775; color:#FAC775; }
+.syncbox .btns button.primary { border-color:#9FE1CB; color:#9FE1CB; }
+.syncbox .btns button.ghost { border-color:rgba(255,255,255,0.14); color:#888780; }
+#syncStatus { margin-top:12px; font-size:11px; color:#FAC775; min-height:16px; line-height:1.6; word-break:break-all; }
 .stock-line { display:none; justify-content:center; align-items:center; gap:8px; margin:6px 0; flex-wrap:wrap; }
 .stock-line input { background:transparent; border:1px dashed rgba(255,255,255,0.3); color:#9FE1CB; border-radius:8px; padding:5px 10px; font-size:13px; text-align:center; }
 body.editing .stock-line { display:flex; }
@@ -79,6 +94,7 @@ body.editing #editPane { display:block; }
       <button id="editBtn" class="only-view" data-page-node-id="KU1PelFrxmgS4MWNl0V6Xv">✎ 编辑内容</button>
       <button id="doneBtn" class="only-edit on" data-page-node-id="yFYELmB7psGF54uw847vSV">✓ 完成编辑</button>
       <button id="saveBtn" class="only-edit" data-page-node-id="RuuyRlWmPHaVyMHXasCzj3">存到浏览器</button>
+      <button id="cloudBtn" data-page-node-id="sfbyCloudBtn01">☁ 云同步</button>
       <button id="resetBtn" class="only-edit" data-page-node-id="4mrz4x3FZYySB190ijmCMm">重置当前标的</button>
       <span class="only-edit" style="font-size:11px;color:#5F5E5A;" data-page-node-id="Vs9SCbBySpDAHEzqcYXkan">修改会自动保存草稿</span>
     </div>
@@ -176,6 +192,27 @@ body.editing #editPane { display:block; }
     <div class="mt" id="mTitle" data-page-node-id="luShSD2F8S29XtCqUxDfOf">新增标的</div>
     <input id="mInput" type="text" maxlength="20" placeholder="输入标的名称（如：上海贝岭）" data-page-node-id="nOixcaiE5GHEqHqtjgXKzc">
     <div class="mrow" data-page-node-id="5zkomsIxeFayFirUuAeCCj"><button id="mCancel" data-page-node-id="Bb9Hjy0lDcA2ri5lFPpUkE">取消</button><button id="mOk" class="primary" data-page-node-id="SbMFMOXQ7cMlyGzAmey5MP">确定</button></div>
+  </div>
+</div>
+<div id="syncMask" class="sync-mask" data-page-node-id="sfbySyncMask01">
+  <div class="syncbox">
+    <h3>☁ 云同步（口令加密）</h3>
+    <p class="tip">数据先用你的口令在本机 AES 加密，再存到你自己的 GitHub 私密 Gist，连 GitHub 都看不到明文。<b>换设备</b>：填同一个令牌 + 同一个口令 → 点「从云端读取」。<b>口令忘了无法恢复</b>，请务必记牢。</p>
+    <label>GitHub 令牌（只需 gist 权限，仅存本机）<a href="https://github.com/settings/tokens" target="_blank" rel="noopener">去生成 ↗</a></label>
+    <input id="syncToken" type="password" placeholder="ghp_ 开头，勾 gist 即可" autocomplete="off">
+    <label>同步口令<a href="#" onclick="return false;" style="color:#888780">自己记住</a></label>
+    <input id="syncPw" type="password" placeholder="至少 4 位" autocomplete="new-password">
+    <div class="btns">
+      <button id="syncSave" class="primary">保存到云端</button>
+      <button id="syncLoad">从云端读取</button>
+    </div>
+    <div class="btns">
+      <button id="syncExport" class="ghost">导出加密文件</button>
+      <button id="syncImport" class="ghost">导入文件</button>
+      <button id="syncClose" class="ghost">关闭</button>
+    </div>
+    <div id="syncStatus"></div>
+    <input id="syncFile" type="file" accept=".json,application/json" style="display:none">
   </div>
 </div>
 <script>
@@ -562,6 +599,135 @@ body.editing #editPane { display:block; }
     });
   });
   renderAll();
+
+  /* ===== 云同步：口令加密 + GitHub 私密 Gist ===== */
+  var GH_TOKEN_KEY='sfby_gh_token_v1';
+  var GIST_MARK='SFBY-SYNC';
+  var GIST_FILE='sfby.enc.json';
+  var syncMask=document.getElementById('syncMask');
+  var syncToken=document.getElementById('syncToken');
+  var syncPw=document.getElementById('syncPw');
+  var syncStatus=document.getElementById('syncStatus');
+  var syncFile=document.getElementById('syncFile');
+  function setStat(m,c){ syncStatus.textContent=m; syncStatus.style.color=c||'#FAC775'; }
+  function b64u8(u8){ var s=''; for(var i=0;i<u8.length;i++){ s+=String.fromCharCode(u8[i]); } return btoa(s); }
+  function u8b64(b){ var s=atob(b), a=new Uint8Array(s.length); for(var i=0;i<s.length;i++){ a[i]=s.charCodeAt(i); } return a; }
+  function deriveKey(pw,salt){
+    return crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey'])
+      .then(function(km){ return crypto.subtle.deriveKey({name:'PBKDF2',salt:salt,iterations:150000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']); });
+  }
+  function encData(obj,pw){
+    var salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12));
+    return deriveKey(pw,salt).then(function(key){
+      return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,new TextEncoder().encode(JSON.stringify(obj)));
+    }).then(function(ct){ return JSON.stringify({v:1,s:b64u8(salt),i:b64u8(iv),d:b64u8(new Uint8Array(ct))}); });
+  }
+  function decData(txt,pw){
+    var o=JSON.parse(txt);
+    if(!o||o.v!==1){ throw new Error('文件格式不对'); }
+    return deriveKey(pw,u8b64(o.s)).then(function(key){
+      return crypto.subtle.decrypt({name:'AES-GCM',iv:u8b64(o.i)},key,u8b64(o.d));
+    }).then(function(pt){ return JSON.parse(new TextDecoder().decode(pt)); });
+  }
+  function gh(path,opt){
+    var t=syncToken.value.trim();
+    if(!t){ return Promise.reject(new Error('请先填写 GitHub 令牌')); }
+    opt=opt||{};
+    var h={'Authorization':'token '+t,'Accept':'application/vnd.github+json'};
+    if(opt.body){ h['Content-Type']='application/json'; }
+    opt.headers=h;
+    return fetch('https://api.github.com'+path,opt).then(function(r){
+      return r.json().then(function(j){
+        if(!r.ok){ throw new Error((j&&j.message)||('请求失败 '+r.status)); }
+        return j;
+      });
+    });
+  }
+  function findGist(){
+    return gh('/gists?per_page=100').then(function(list){
+      for(var i=0;i<list.length;i++){ if(list[i].description===GIST_MARK){ return list[i].id; } }
+      return null;
+    });
+  }
+  function payloadFile(payload){ var f={}; f[GIST_FILE]={content:payload}; return f; }
+  function applyData(obj){
+    if(!obj||!obj.stocks||!obj.stocks.length){ throw new Error('数据内容异常'); }
+    DATA=obj;
+    if(!DATA.curId||!DATA.stocks.some(function(s){ return s.id===DATA.curId; })){ DATA.curId=DATA.stocks[0].id; }
+    stageN=6;
+    autosave();
+    try{ renderAll(); fillForm(); }catch(e){ renderAll(); }
+  }
+  document.getElementById('cloudBtn').addEventListener('click',function(){
+    try{ syncToken.value=localStorage.getItem(GH_TOKEN_KEY)||''; }catch(e){}
+    syncPw.value=''; setStat('');
+    syncMask.classList.add('show');
+  });
+  document.getElementById('syncClose').addEventListener('click',function(){ syncMask.classList.remove('show'); });
+  syncMask.addEventListener('click',function(e){ if(e.target===syncMask){ syncMask.classList.remove('show'); } });
+  document.getElementById('syncSave').addEventListener('click',function(){
+    var pw=syncPw.value;
+    if(pw.length<4){ setStat('口令至少 4 位','#E24B4A'); return; }
+    setStat('加密并上传中…','#AFA9EC');
+    encData(DATA,pw).then(function(payload){
+      return findGist().then(function(id){
+        if(id){ return gh('/gists/'+id,{method:'PATCH',body:JSON.stringify({files:payloadFile(payload)})}); }
+        return gh('/gists',{method:'POST',body:JSON.stringify({description:GIST_MARK,public:false,files:payloadFile(payload)})});
+      });
+    }).then(function(){
+      try{ localStorage.setItem(GH_TOKEN_KEY,syncToken.value.trim()); }catch(e){}
+      setStat('✓ 已加密保存到云端（私密 Gist）','#9FE1CB');
+    }).catch(function(e){ setStat('× '+(e&&e.message?e.message:e),'#E24B4A'); });
+  });
+  document.getElementById('syncLoad').addEventListener('click',function(){
+    var pw=syncPw.value;
+    if(pw.length<4){ setStat('口令至少 4 位','#E24B4A'); return; }
+    setStat('查找云端数据中…','#AFA9EC');
+    findGist().then(function(id){
+      if(!id){ throw new Error('云端还没有数据，请先保存一次'); }
+      setStat('下载并解密中…','#AFA9EC');
+      return gh('/gists/'+id).then(function(g){
+        var f=g.files&&g.files[GIST_FILE];
+        if(!f){ throw new Error('云端数据缺失'); }
+        return decData(f.content,pw);
+      });
+    }).then(function(obj){
+      applyData(obj);
+      try{ localStorage.setItem(GH_TOKEN_KEY,syncToken.value.trim()); }catch(e){}
+      setStat('✓ 已从云端读取并应用','#9FE1CB');
+    }).catch(function(e){
+      setStat('× '+(e&&e.message?e.message:e)+'（口令错或令牌无效也会这样）','#E24B4A');
+    });
+  });
+  document.getElementById('syncExport').addEventListener('click',function(){
+    var pw=syncPw.value;
+    if(pw.length<4){ setStat('先填口令再导出','#E24B4A'); return; }
+    encData(DATA,pw).then(function(payload){
+      var blob=new Blob([payload],{type:'application/json'});
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download='四方博弈图-备份-'+new Date().toISOString().slice(0,10)+'.enc.json';
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+      setStat('✓ 已导出加密文件（记得和口令一起保存）','#9FE1CB');
+    }).catch(function(e){ setStat('× '+(e&&e.message?e.message:e),'#E24B4A'); });
+  });
+  document.getElementById('syncImport').addEventListener('click',function(){ syncFile.click(); });
+  syncFile.addEventListener('change',function(){
+    var f=syncFile.files&&syncFile.files[0];
+    if(!f){ return; }
+    var pw=syncPw.value;
+    if(pw.length<4){ setStat('先填口令再导入','#E24B4A'); syncFile.value=''; return; }
+    var fr=new FileReader();
+    fr.onload=function(){
+      decData(String(fr.result),pw).then(function(obj){
+        applyData(obj);
+        setStat('✓ 已从文件导入','#9FE1CB');
+      }).catch(function(e){ setStat('× '+(e&&e.message?e.message:e),'#E24B4A'); });
+      syncFile.value='';
+    };
+    fr.readAsText(f);
+  });
 })();
 </script>
 </body>
